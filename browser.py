@@ -1,51 +1,60 @@
 import sys, os
 import requests
 from collections import deque
+from bs4 import BeautifulSoup
+from colorama import Fore, Back, Style
 
-# write your code here
 arg = sys.argv
 directory = arg[1]
 os.makedirs(directory, exist_ok=True)
 
 
 def save(file_name, data):
-
-    page_dir = os.path.join(directory, file_name.split('.')[0])
-    print(page_dir)
-    print(data)
-    with open(page_dir, 'w', encoding='utf-8') as file:
-        file.write(data)
-
-
-def back_url(url):
-    return browse(url)
+    file_name_mod = file_name.split('.')[0].strip('https://')
+    page_dir = os.path.join(directory, file_name_mod)
+    with open(page_dir, 'w', encoding='utf-8') as file_in:
+        file_in.write(Fore.BLUE + data)
+    with open(page_dir, 'r', encoding='utf-8') as file_out:
+        for line in file_out:
+            print(line)
 
 
 def browse(url):
-    return requests.get(url).text
+    source_code = requests.get(url)
+    soup = BeautifulSoup(source_code.content, 'html.parser')
+    # for i in range(20):
+    #     if '<script' in str(soup):
+    #         soup.script.decompose()
+    # print(soup)
+    return soup.get_text()
 
 
 def make_url(url):
     protocol = 'https://'
     return url if url.startswith(protocol) else protocol + url
 
-prev = deque()
+
+log_list = deque()
 while True:
     url = input()
     if url == 'exit':
         break
     if url == 'back':
-        bck = back_url(make_url(prev.pop()))
+        if not log_list:
+            print('No page found')
+            continue
+        log_list.pop()
+        last_page = log_list.pop()
+        # print(last_page)
+        bck = make_url(last_page)
+        # print(bck)
         save(file_name, browse(bck))
         continue
     if '.' not in url:
-        print('Incorrect url1')
+        print('Incorrect url')
         continue
-    prev.append(url)
+    log_list.append(url)
+    # print(log_list)
     file_name = url.split('.')[0]
     url = make_url(url)
     save(file_name, browse(url))
-
-
-
-
